@@ -116,23 +116,35 @@
         </div>
     </div>
 
-    <div class="container">
-        <!-- وصف الصفحة -->
+    <div class="container py-4">
+        <!-- بيانات الصفحة -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="fas fa-file-alt me-2"></i>
-                    وصف الصفحة
+                    <i class="fas fa-info-circle me-2"></i>
+                    بيانات الصفحة
                 </h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
+                    <label for="pageTitle" class="form-label">عنوان الصفحة</label>
+                    <input type="text" class="form-control" id="pageTitle" placeholder="أدخل عنوان الصفحة">
+                </div>
+                <div class="mb-3">
                     <label for="pageDescription" class="form-label">وصف الصفحة</label>
                     <textarea class="form-control" id="pageDescription" rows="3" placeholder="أدخل وصف الصفحة"></textarea>
                 </div>
+                <div class="mb-3">
+                    <label for="githubLink" class="form-label">رابط GitHub</label>
+                    <input type="text" class="form-control" id="githubLink" placeholder="أدخل رابط GitHub">
+                </div>
+                <div class="mb-3">
+                    <label for="logoPath" class="form-label">مسار الشعار</label>
+                    <input type="text" class="form-control" id="logoPath" placeholder="أدخل مسار الشعار">
+                </div>
                 <button class="btn btn-primary" onclick="saveDescription()">
                     <i class="fas fa-save me-2"></i>
-                    حفظ الوصف
+                    حفظ البيانات
                 </button>
             </div>
         </div>
@@ -233,6 +245,19 @@
         // تحميل المحتوى عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', loadContent);
 
+        let pageContent = {
+            pageDescription: {
+                title: '',
+                content: ''
+            },
+            navigation: {
+                logo: '',
+                github_link: '',
+                menu_items: []
+            },
+            sections: []
+        };
+
         async function loadContent() {
             try {
                 const response = await fetch('content/data.json');
@@ -240,26 +265,27 @@
                     throw new Error('فشل في تحميل البيانات');
                 }
                 const data = await response.json();
-                displayContent(data);
+                pageContent = data;
+                displayContent();
             } catch (error) {
                 console.error('Error loading content:', error);
                 showNotification('فشل في تحميل البيانات', 'error');
             }
         }
 
-        function displayContent(data) {
-            // عرض وصف الصفحة
-            const descriptionTextarea = document.getElementById('pageDescription');
-            if (data.pageDescription && data.pageDescription.content) {
-                descriptionTextarea.value = data.pageDescription.content;
-            }
+        function displayContent() {
+            // عرض بيانات الصفحة
+            document.getElementById('pageTitle').value = pageContent.pageDescription?.title || '';
+            document.getElementById('pageDescription').value = pageContent.pageDescription?.content || '';
+            document.getElementById('githubLink').value = pageContent.navigation?.github_link || '';
+            document.getElementById('logoPath').value = pageContent.navigation?.logo || '';
 
             // عرض الأقسام
             const sectionsContainer = document.getElementById('sectionsContainer');
-            sectionsContainer.innerHTML = ''; // مسح المحتوى الحالي
+            sectionsContainer.innerHTML = '';
 
-            if (data.sections && data.sections.length > 0) {
-                data.sections.forEach((section, index) => {
+            if (pageContent.sections && pageContent.sections.length > 0) {
+                pageContent.sections.forEach((section, index) => {
                     const sectionCard = document.createElement('div');
                     sectionCard.className = 'section-card';
                     sectionCard.innerHTML = `
@@ -281,14 +307,24 @@
             }
         }
 
-        function saveDescription() {
-            const description = document.getElementById('pageDescription').value;
-            const currentData = getCurrentData();
-            currentData.pageDescription = {
-                title: 'وصف الصفحة',
-                content: description
-            };
-            saveContent(currentData);
+        async function saveDescription() {
+            try {
+                pageContent.pageDescription = {
+                    title: document.getElementById('pageTitle').value,
+                    content: document.getElementById('pageDescription').value
+                };
+                pageContent.navigation = {
+                    logo: document.getElementById('logoPath').value,
+                    github_link: document.getElementById('githubLink').value,
+                    menu_items: pageContent.navigation?.menu_items || []
+                };
+
+                await saveContent();
+                showNotification('تم حفظ البيانات بنجاح');
+            } catch (error) {
+                console.error('Error saving description:', error);
+                showNotification('فشل في حفظ البيانات', 'error');
+            }
         }
 
         function addNewSection() {
@@ -300,32 +336,34 @@
                 return;
             }
 
-            const currentData = getCurrentData();
-            if (!currentData.sections) {
-                currentData.sections = [];
+            if (!Array.isArray(pageContent.sections)) {
+                pageContent.sections = [];
             }
             
-            currentData.sections.push({
+            pageContent.sections.push({
                 title: title,
                 content: content
             });
 
-            saveContent(currentData);
+            saveContent();
             
-            // إعادة تعيين النموذج
+            // إعادة تعيين النموذج وإغلاق النافذة المنبثقة
             document.getElementById('newSectionForm').reset();
-            document.getElementById('addSectionModal').click(); // إغلاق النافذة المنبثقة
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addSectionModal'));
+            if (modal) {
+                modal.hide();
+            }
         }
 
         function editSection(index) {
-            const currentData = getCurrentData();
-            const section = currentData.sections[index];
+            const section = pageContent.sections[index];
             
             document.getElementById('editSectionTitle').value = section.title;
             document.getElementById('editSectionContent').value = section.content;
             document.getElementById('editSectionIndex').value = index;
             
-            new bootstrap.Modal(document.getElementById('editSectionModal')).show();
+            const modal = new bootstrap.Modal(document.getElementById('editSectionModal'));
+            modal.show();
         }
 
         function saveSection() {
@@ -338,34 +376,35 @@
                 return;
             }
 
-            const currentData = getCurrentData();
-            currentData.sections[index] = {
+            pageContent.sections[index] = {
                 title: title,
                 content: content
             };
 
-            saveContent(currentData);
+            saveContent();
             
             // إغلاق النافذة المنبثقة
-            bootstrap.Modal.getInstance(document.getElementById('editSectionModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
+            if (modal) {
+                modal.hide();
+            }
         }
 
         function deleteSection(index) {
             if (confirm('هل أنت متأكد من حذف هذا القسم؟')) {
-                const currentData = getCurrentData();
-                currentData.sections.splice(index, 1);
-                saveContent(currentData);
+                pageContent.sections.splice(index, 1);
+                saveContent();
             }
         }
 
-        async function saveContent(data) {
+        async function saveContent() {
             try {
                 const response = await fetch('content/save.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(pageContent)
                 });
 
                 if (!response.ok) {
@@ -373,20 +412,10 @@
                 }
 
                 showNotification('تم حفظ التغييرات بنجاح');
-                displayContent(data);
+                displayContent();
             } catch (error) {
                 console.error('Error saving content:', error);
                 showNotification('فشل في حفظ البيانات', 'error');
-            }
-        }
-
-        function getCurrentData() {
-            try {
-                const rawData = localStorage.getItem('pageData');
-                return rawData ? JSON.parse(rawData) : { sections: [] };
-            } catch (error) {
-                console.error('Error parsing data:', error);
-                return { sections: [] };
             }
         }
 
