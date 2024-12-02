@@ -19,6 +19,12 @@
                 <a class="navbar-brand" href="#">
                     <img src="logo.png" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
                 </a>
+                <button class="toggle" type="button">
+                    <span class="fa fa-bars"></span>
+                </button>
+                <div class="menu">
+                    <!-- Navigation items will go here -->
+                </div>
             </div>
         </nav>
     </header>
@@ -75,11 +81,9 @@
                 data.sections.forEach((section, index) => {
                     // إضافة للقائمة الجانبية
                     const menuItem = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `#section-${index}`;
-                    link.className = 'js-btn';
-                    link.textContent = section.title;
-                    menuItem.appendChild(link);
+                    menuItem.className = 'js-btn';
+                    menuItem.setAttribute('data-section', `section-${index}`);
+                    menuItem.textContent = section.title;
                     menuList.appendChild(menuItem);
 
                     // إضافة محتوى القسم

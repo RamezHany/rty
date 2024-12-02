@@ -68,52 +68,37 @@ window.addEventListener("load", function() {
   }
 });
 
-// التنقل داخل الصفحة
-var links = getAll('.js-btn');
+//in page scrolling for documentaiton page
+var btns = getAll('.js-btn');
+var sections = getAll('.js-section');
 
-links.forEach(function(link) {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // إزالة الكلاس selected من جميع الروابط
-        links.forEach(l => l.classList.remove('selected'));
-        // إضافة الكلاس selected للرابط المضغوط
-        this.classList.add('selected');
-        
-        // الحصول على ID القسم من الرابط
-        var targetId = this.getAttribute('href');
-        var targetSection = document.querySelector(targetId);
-        
-        if (targetSection) {
-            window.scrollTo({
-                'behavior': 'smooth',
-                'top': targetSection.offsetTop - 20,
-                'left': 0
-            });
-        }
-    });
-});
+function setActiveLink(event) {
+  // remove all active tab classes
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('selected');
+  }
 
-// تحديث القائمة عند التمرير
-window.addEventListener('scroll', function() {
-    var sections = getAll('.js-section');
-    var scrollPosition = window.scrollY;
+  event.target.classList.add('selected');
+}
 
-    sections.forEach(function(section, index) {
-        var sectionTop = section.offsetTop - 100;
-        var sectionBottom = sectionTop + section.offsetHeight;
-        
-        if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-            links.forEach(link => link.classList.remove('selected'));
-            var correspondingLink = document.querySelector(`a[href="#${section.id}"]`);
-            if (correspondingLink) {
-                correspondingLink.classList.add('selected');
-            }
-        }
-    });
-});
+function smoothScrollTo(i, event) {
+  var element = sections[i];
+  setActiveLink(event);
 
-// تثبيت القائمة في أعلى الصفحة عند التمرير
+  window.scrollTo({
+    'behavior': 'smooth',
+    'top': element.offsetTop - 20,
+    'left': 0
+  });
+}
+
+if (btns.length && sections.length > 0) {
+  for (var i = 0; i<btns.length; i++) {
+    btns[i].addEventListener('click', smoothScrollTo.bind(this,i));
+  }
+}
+
+// fix menu to page-top once user starts scrolling
 window.addEventListener('scroll', function () {
   var docNav = get('.doc__nav > ul');
 
@@ -142,3 +127,4 @@ window.addEventListener('load', function(){
   }
   icon.addEventListener('click', showNav);
 });
+
