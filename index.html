@@ -82,8 +82,10 @@
                     // إضافة للقائمة الجانبية
                     const menuItem = document.createElement('li');
                     menuItem.className = 'js-btn';
-                    menuItem.setAttribute('data-section', `section-${index}`);
-                    menuItem.textContent = section.title;
+                    const menuLink = document.createElement('a');
+                    menuLink.href = `#section-${index}`;
+                    menuLink.textContent = section.title;
+                    menuItem.appendChild(menuLink);
                     menuList.appendChild(menuItem);
 
                     // إضافة محتوى القسم
