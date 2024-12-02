@@ -127,12 +127,8 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label for="pageTitle" class="form-label">عنوان الصفحة</label>
-                    <input type="text" class="form-control" id="pageTitle" placeholder="أدخل عنوان الصفحة">
-                </div>
-                <div class="mb-3">
-                    <label for="pageContent" class="form-label">وصف الصفحة</label>
-                    <textarea class="form-control" id="pageContent" rows="3" placeholder="أدخل وصف الصفحة"></textarea>
+                    <label for="pageDescription" class="form-label">وصف الصفحة</label>
+                    <textarea class="form-control" id="pageDescription" rows="3" placeholder="أدخل وصف الصفحة"></textarea>
                 </div>
                 <button class="btn btn-primary" onclick="saveDescription()">
                     <i class="fas fa-save me-2"></i>
@@ -159,8 +155,45 @@
         </div>
     </div>
 
+    <!-- Modal إضافة قسم -->
+    <div class="modal fade" id="addSectionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة قسم جديد
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newSectionForm">
+                        <div class="mb-3">
+                            <label for="newSectionTitle" class="form-label">عنوان القسم</label>
+                            <input type="text" class="form-control" id="newSectionTitle" placeholder="أدخل عنوان القسم">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newSectionContent" class="form-label">محتوى القسم</label>
+                            <textarea class="form-control" id="newSectionContent" rows="5" placeholder="أدخل محتوى القسم"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        إلغاء
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="addNewSection()">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal تحرير القسم -->
-    <div class="modal fade" id="sectionModal" tabindex="-1">
+    <div class="modal fade" id="editSectionModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -171,14 +204,14 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="sectionId">
+                    <input type="hidden" id="editSectionIndex">
                     <div class="mb-3">
-                        <label for="sectionTitle" class="form-label">عنوان القسم</label>
-                        <input type="text" class="form-control" id="sectionTitle" placeholder="أدخل عنوان القسم">
+                        <label for="editSectionTitle" class="form-label">عنوان القسم</label>
+                        <input type="text" class="form-control" id="editSectionTitle" placeholder="أدخل عنوان القسم">
                     </div>
                     <div class="mb-3">
-                        <label for="sectionContent" class="form-label">محتوى القسم</label>
-                        <textarea class="form-control" id="sectionContent" rows="5" placeholder="أدخل محتوى القسم"></textarea>
+                        <label for="editSectionContent" class="form-label">محتوى القسم</label>
+                        <textarea class="form-control" id="editSectionContent" rows="5" placeholder="أدخل محتوى القسم"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -197,202 +230,177 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let pageContent = {
-            pageDescription: {
-                title: '',
-                content: ''
-            },
-            navigation: {
-                logo: '',
-                github_link: '',
-                menu_items: []
-            },
-            sections: []
-        };
-        let sectionModal;
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            sectionModal = new bootstrap.Modal(document.getElementById('sectionModal'));
-            await loadContent();
-        });
+        // تحميل المحتوى عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', loadContent);
 
         async function loadContent() {
             try {
-                const response = await fetch('/api/save-content.php');
-                console.log('Response status:', response.status);
-                // إزالة تسجيل النص لأنه يقرأ الجسم بالفعل
-                // console.log('Response text:', await response.text());
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && !data.error) {
-                        pageContent = data;
-                    }
-                } else {
-                    console.error('Failed to load content:', response.status);
-                    showNotification('فشل في تحميل المحتوى: ' + response.status, 'error');
+                const response = await fetch('content/data.json');
+                if (!response.ok) {
+                    throw new Error('فشل في تحميل البيانات');
                 }
-                displayContent();
+                const data = await response.json();
+                displayContent(data);
             } catch (error) {
                 console.error('Error loading content:', error);
-                showNotification('فشل في تحميل المحتوى', 'error');
+                showNotification('فشل في تحميل البيانات', 'error');
             }
         }
 
-        function displayContent() {
+        function displayContent(data) {
             // عرض وصف الصفحة
-            document.getElementById('pageTitle').value = pageContent.pageDescription?.title || '';
-            document.getElementById('pageContent').value = pageContent.pageDescription?.content || '';
+            const descriptionTextarea = document.getElementById('pageDescription');
+            if (data.pageDescription && data.pageDescription.content) {
+                descriptionTextarea.value = data.pageDescription.content;
+            }
 
             // عرض الأقسام
             const sectionsContainer = document.getElementById('sectionsContainer');
-            sectionsContainer.innerHTML = '';
+            sectionsContainer.innerHTML = ''; // مسح المحتوى الحالي
 
-            if (pageContent.sections && pageContent.sections.length > 0) {
-                pageContent.sections.forEach((section, index) => {
-                    const sectionHtml = `
-                        <div class="card mb-3">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">${section.title || ''}</h5>
-                                <div>
-                                    <button class="btn btn-sm btn-primary" onclick="editSection(${index})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteSection(${index})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">${section.content || ''}</p>
+            if (data.sections && data.sections.length > 0) {
+                data.sections.forEach((section, index) => {
+                    const sectionCard = document.createElement('div');
+                    sectionCard.className = 'section-card';
+                    sectionCard.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>${section.title}</h5>
+                            <div>
+                                <button class="btn btn-sm btn-primary ms-2" onclick="editSection(${index})">
+                                    <i class="fas fa-edit"></i> تعديل
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSection(${index})">
+                                    <i class="fas fa-trash"></i> حذف
+                                </button>
                             </div>
                         </div>
+                        <p class="mt-2">${section.content}</p>
                     `;
-                    sectionsContainer.innerHTML += sectionHtml;
+                    sectionsContainer.appendChild(sectionCard);
                 });
             }
         }
 
-        async function saveDescription() {
-            try {
-                pageContent.pageDescription = {
-                    title: document.getElementById('pageTitle').value,
-                    content: document.getElementById('pageContent').value
-                };
-                await saveContent();
-                showNotification('تم حفظ وصف الصفحة بنجاح', 'success');
-            } catch (error) {
-                showNotification('حدث خطأ أثناء الحفظ: ' + error.message, 'error');
-            }
+        function saveDescription() {
+            const description = document.getElementById('pageDescription').value;
+            const currentData = getCurrentData();
+            currentData.pageDescription = {
+                title: 'وصف الصفحة',
+                content: description
+            };
+            saveContent(currentData);
         }
 
         function addNewSection() {
-            document.getElementById('sectionId').value = '';
-            document.getElementById('sectionTitle').value = '';
-            document.getElementById('sectionContent').value = '';
-            sectionModal.show();
+            const title = document.getElementById('newSectionTitle').value;
+            const content = document.getElementById('newSectionContent').value;
+            
+            if (!title || !content) {
+                showNotification('يرجى ملء جميع الحقول', 'error');
+                return;
+            }
+
+            const currentData = getCurrentData();
+            if (!currentData.sections) {
+                currentData.sections = [];
+            }
+            
+            currentData.sections.push({
+                title: title,
+                content: content
+            });
+
+            saveContent(currentData);
+            
+            // إعادة تعيين النموذج
+            document.getElementById('newSectionForm').reset();
+            document.getElementById('addSectionModal').click(); // إغلاق النافذة المنبثقة
         }
 
         function editSection(index) {
-            const section = pageContent.sections[index];
-            document.getElementById('sectionId').value = index;
-            document.getElementById('sectionTitle').value = section.title || '';
-            document.getElementById('sectionContent').value = section.content || '';
-            sectionModal.show();
+            const currentData = getCurrentData();
+            const section = currentData.sections[index];
+            
+            document.getElementById('editSectionTitle').value = section.title;
+            document.getElementById('editSectionContent').value = section.content;
+            document.getElementById('editSectionIndex').value = index;
+            
+            new bootstrap.Modal(document.getElementById('editSectionModal')).show();
         }
 
-        async function saveSection() {
-            try {
-                const id = document.getElementById('sectionId').value;
-                const section = {
-                    title: document.getElementById('sectionTitle').value,
-                    content: document.getElementById('sectionContent').value
-                };
-
-                if (id === '') {
-                    if (!Array.isArray(pageContent.sections)) {
-                        pageContent.sections = [];
-                    }
-                    pageContent.sections.push(section);
-                } else {
-                    pageContent.sections[parseInt(id)] = section;
-                }
-
-                await saveContent();
-                sectionModal.hide();
-                showNotification('تم حفظ القسم بنجاح', 'success');
-                displayContent();
-            } catch (error) {
-                showNotification('حدث خطأ أثناء الحفظ: ' + error.message, 'error');
+        function saveSection() {
+            const index = parseInt(document.getElementById('editSectionIndex').value);
+            const title = document.getElementById('editSectionTitle').value;
+            const content = document.getElementById('editSectionContent').value;
+            
+            if (!title || !content) {
+                showNotification('يرجى ملء جميع الحقول', 'error');
+                return;
             }
+
+            const currentData = getCurrentData();
+            currentData.sections[index] = {
+                title: title,
+                content: content
+            };
+
+            saveContent(currentData);
+            
+            // إغلاق النافذة المنبثقة
+            bootstrap.Modal.getInstance(document.getElementById('editSectionModal')).hide();
         }
 
-        async function deleteSection(index) {
+        function deleteSection(index) {
             if (confirm('هل أنت متأكد من حذف هذا القسم؟')) {
-                try {
-                    pageContent.sections.splice(index, 1);
-                    await saveContent();
-                    showNotification('تم حذف القسم بنجاح', 'success');
-                    displayContent();
-                } catch (error) {
-                    showNotification('حدث خطأ أثناء الحذف: ' + error.message, 'error');
-                }
+                const currentData = getCurrentData();
+                currentData.sections.splice(index, 1);
+                saveContent(currentData);
             }
         }
 
-        async function saveContent() {
+        async function saveContent(data) {
             try {
-                // التحقق من صحة البيانات قبل إرسالها
-                if (!pageContent) {
-                    throw new Error('البيانات غير موجودة');
-                }
-
-                if (!pageContent.pageDescription) {
-                    throw new Error('وصف الصفحة غير موجود');
-                }
-
-                if (!Array.isArray(pageContent.sections)) {
-                    throw new Error('الأقسام غير موجودة أو غير صحيحة');
-                }
-
-                console.log('Sending data:', JSON.stringify(pageContent, null, 2));
-
-                const response = await fetch('/api/save-content.php', {
+                const response = await fetch('content/save.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(pageContent)
+                    body: JSON.stringify(data)
                 });
-                
+
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Server response:', errorText);
-                    throw new Error(`فشل في حفظ البيانات: ${response.status} ${errorText}`);
+                    throw new Error('فشل في حفظ البيانات');
                 }
 
-                const result = await response.json();
-                if (result.error) {
-                    throw new Error(result.error);
-                }
-                
-                return result;
+                showNotification('تم حفظ التغييرات بنجاح');
+                displayContent(data);
             } catch (error) {
                 console.error('Error saving content:', error);
-                throw error;
+                showNotification('فشل في حفظ البيانات', 'error');
+            }
+        }
+
+        function getCurrentData() {
+            try {
+                const rawData = localStorage.getItem('pageData');
+                return rawData ? JSON.parse(rawData) : { sections: [] };
+            } catch (error) {
+                console.error('Error parsing data:', error);
+                return { sections: [] };
             }
         }
 
         function showNotification(message, type = 'success') {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-            alertDiv.setAttribute('role', 'alert');
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            document.body.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 5000);
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+            notification.style.zIndex = '1050';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     </script>
 </body>
