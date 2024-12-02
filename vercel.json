@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    }
+  },
+  "rewrites": [
+    { 
+      "source": "/save-content.php",
+      "destination": "/api/save-content.php"
+    },
+    { 
+      "source": "/save-page-content.php",
+      "destination": "/api/save-page-content.php"
+    }
+  ]
+}
