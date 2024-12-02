@@ -99,31 +99,11 @@ if (!isset($data['pageDescription'])) {
     exit;
 }
 
-if (!isset($data['sections']) || !is_array($data['sections'])) {
+if (!isset($data['sections'])) {
     http_response_code(400);
-    error_log('Invalid sections data: ' . json_encode($data));
-    echo json_encode(['error' => 'هيكل البيانات غير صحيح - sections غير صحيح']);
+    error_log('Missing sections in data: ' . json_encode($data));
+    echo json_encode(['error' => 'هيكل البيانات غير صحيح - sections مفقود']);
     exit;
-}
-
-// التحقق من صحة بيانات الأقسام
-foreach ($data['sections'] as $section) {
-    if (!isset($section['title']) || !isset($section['content'])) {
-        http_response_code(400);
-        error_log('Invalid section data: ' . json_encode($section));
-        echo json_encode(['error' => 'هيكل القسم غير صحيح - title أو content مفقود']);
-        exit;
-    }
-    
-    // إضافة id تلقائي إذا لم يكن موجوداً
-    if (!isset($section['id']) || empty($section['id'])) {
-        $section['id'] = 'section-' . uniqid();
-    }
-    
-    // إضافة link تلقائي إذا لم يكن موجوداً
-    if (!isset($section['link']) || empty($section['link'])) {
-        $section['link'] = '#' . $section['id'];
-    }
 }
 
 // حفظ البيانات في ملف على GitHub

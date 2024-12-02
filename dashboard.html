@@ -180,14 +180,6 @@
                         <label for="sectionContent" class="form-label">محتوى القسم</label>
                         <textarea class="form-control" id="sectionContent" rows="5" placeholder="أدخل محتوى القسم"></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label for="sectionLink" class="form-label">رابط القسم</label>
-                        <input type="text" class="form-control" id="sectionLink" placeholder="أدخل رابط القسم">
-                    </div>
-                    <div class="mb-3">
-                        <label for="sectionIdInput" class="form-label">ID القسم</label>
-                        <input type="text" class="form-control" id="sectionIdInput" placeholder="أدخل ID القسم">
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -273,8 +265,6 @@
                             </div>
                             <div class="card-body">
                                 <p class="card-text">${section.content || ''}</p>
-                                <p class="card-text">رابط القسم: ${section.link || ''}</p>
-                                <p class="card-text">ID القسم: ${section.id || ''}</p>
                             </div>
                         </div>
                     `;
@@ -300,8 +290,6 @@
             document.getElementById('sectionId').value = '';
             document.getElementById('sectionTitle').value = '';
             document.getElementById('sectionContent').value = '';
-            document.getElementById('sectionLink').value = '';
-            document.getElementById('sectionIdInput').value = '';
             sectionModal.show();
         }
 
@@ -310,38 +298,24 @@
             document.getElementById('sectionId').value = index;
             document.getElementById('sectionTitle').value = section.title || '';
             document.getElementById('sectionContent').value = section.content || '';
-            document.getElementById('sectionLink').value = section.link || '';
-            document.getElementById('sectionIdInput').value = section.id || '';
             sectionModal.show();
         }
 
         async function saveSection() {
             try {
-                const titleInput = document.getElementById('sectionTitle');
-                const contentInput = document.getElementById('sectionContent');
-                const linkInput = document.getElementById('sectionLink');
-                const idInput = document.getElementById('sectionIdInput');
-                const sectionIndexInput = document.getElementById('sectionId');
-
-                if (!titleInput.value || !contentInput.value) {
-                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
-                    return;
-                }
-
-                let section = {
-                    title: titleInput.value,
-                    content: contentInput.value,
-                    link: linkInput.value,
-                    id: idInput.value
+                const id = document.getElementById('sectionId').value;
+                const section = {
+                    title: document.getElementById('sectionTitle').value,
+                    content: document.getElementById('sectionContent').value
                 };
 
-                const index = sectionIndexInput.value;
-                if (index !== '') {
-                    // تعديل قسم موجود
-                    pageContent.sections[index] = section;
-                } else {
-                    // إضافة قسم جديد
+                if (id === '') {
+                    if (!Array.isArray(pageContent.sections)) {
+                        pageContent.sections = [];
+                    }
                     pageContent.sections.push(section);
+                } else {
+                    pageContent.sections[parseInt(id)] = section;
                 }
 
                 await saveContent();
